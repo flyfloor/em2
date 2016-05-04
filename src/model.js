@@ -33,9 +33,15 @@ const filterUrl = (url) => {
 
     if (url.charAt(0) !== '/') {
         if (url.indexOf('http') !== 0 && url.indexOf('https') !== 0) {
-            return `/${url}`
+            url = `/${url}`
         }
     }
+
+    let _l = url.length - 1;
+    if(_l > 0 && url.charAt(_l) === '/') {
+        url = url.slice(0, _l)
+    }
+
     return url
 }
 
@@ -64,11 +70,11 @@ const serialize = (params) => {
 }
 
 const fetchApi = (url, options = {}) => {
-    options = options || {
-        method: 'GET',
-    }
+    options = options || {};
 
-    let {method} = options
+    if (!options.hasOwnProperty('method')) {
+        options.method = 'GET';
+    }
     return new Promise((resolve, rejected) => {
         fetch(url, options).then(response => {
             if (response.status >= 200 && response.status < 300) {
@@ -121,8 +127,8 @@ EM2.drop = (name) => {
 
 EM2.prototype = {
     pkey: '_id',
-    findOne(id) {
-        return 'find one' 
+    findOne(id, params) {
+        return fetchApi(`${this.url}/${id}${serialize(params)}`)
     },
 
     find(params) {
@@ -130,19 +136,26 @@ EM2.prototype = {
     },
 
     update(id, params) {
-        return 'update'
+        let options = Object.assign({method: 'PUT'}, {body: JSON.stringify(params)})
+        return fetchApi(`${this.url}/${id}`, options)
     },
     
     create(params) {
-        return 'create'
+        let options = Object.assign({method: 'POST'}, {body: JSON.stringify(params)})
+        return fetchApi(`${this.url}`, options)
     },
 
     save(params) {
-        return 'save'
+        let method = 'POST'
+        if (params && params[this.pkey]) {
+            method = 'PUT'
+        }
+        let options = Object.assign({method}, {body: JSON.stringify(params)})
+        return fetchApi(`${this.url}`, options)
     },
 
-    destroy(params) {
-        return 'destroy'
+    destroy(id, params) {
+        return fetchApi(`${this.url}/${id}${serialize(params)}`, {method: 'DELETE'})
     }
 }
 
