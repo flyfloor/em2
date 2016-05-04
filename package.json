@@ -1,7 +1,7 @@
 {
-  "name": "easyorm",
+  "name": "MM",
   "version": "0.0.1",
-  "description": "es6 easyorm",
+  "description": "es6 MM",
   "main": "app.js",
   "scripts": {
     "start": "NODE_ENV=dev node server.js",
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jerryshew/easyorm"
+    "url": "https://github.com/jerryshew/MM"
   },
   "keywords": [
-    "easyorm"
+    "MM, model manage"
   ],
   "author": "jerryshew",
   "license": "MIT",
-  "homepage": "https://github.com",
+  "homepage": "https://github.com/jerryshew/MM",
   "devDependencies": {
     "autoprefixer": "^6.3.5",
     "babel-core": "^6.0.0",
@@ -42,5 +42,9 @@
     "webpack": "^1.12.11",
     "webpack-dev-middleware": "^1.2.0",
     "webpack-hot-middleware": "^2.5.0"
+  },
+  "dependencies": {
+    "es6-promise": "^3.1.2",
+    "whatwg-fetch": "^1.0.0"
   }
 }

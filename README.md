@@ -1,3 +1,3 @@
 ## Easyorm
 
-this is a front end es6 easyorm
+this is a front end ES6 easyorm
