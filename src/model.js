@@ -7,16 +7,28 @@
 
 // clear fields
 const clearFields = (fields) => {
-    let newFields = [], fieldNames = [];
-    if (fields instanceof Array) {
+    let newFields = {}, fieldNames = [];
+    if (fields.constructor === Array) {
         fields.map(field => {
-            if (typeof field === 'string') {
-                newFields.push({name: field, default: undefined, type: undefined})
-                fieldNames.push(field)
-            } else {
-                if (field.name) {
-                    newFields.push({name: field.name, default: field.default, type: field.type})
-                    fieldNames.push(field.name)
+            newFields[field] = {type: undefined, default: undefined}
+        })
+        fieldNames = fields.slice(0)
+    } else if(fields.constructor === Object) {
+        Object.keys(fields).map(name => {
+            if (fields.hasOwnProperty(name)) {
+                if (fieldNames.indexOf(name) === -1) {
+                    fieldNames.push(name)
+                }
+                
+                let item = fields[name]
+                newFields[name] = {
+                    type: item.type,
+                    default: item.default
+                }
+                if (item.hasOwnProperty('type') &&  [undefined, null].indexOf(item.type) === -1) {
+                    if ([undefined, null].indexOf(item.default) !== -1 || item.default.constructor !== item.type) {
+                        newFields[name].default = item.type.call(null);
+                    }
                 }
             }
         })
@@ -117,10 +129,27 @@ const EM2 = (m, config = {}) => {
 EM2.models = {}
 EM2.modelNames = []
 
+EM2.fillFields = (modelName, params) => {
+    let model = EM2.models[modelName]
+    if (!model) {
+        return params
+    }
+    let {fields} = model;
+    Object.keys(fields).forEach(name => {
+        if (params.hasOwnProperty(name)) {
+            let item = fields[name]
+            if (params[name].constructor !== item.type) {
+                params[name] = item.type()
+            }
+            console.log(params[name], name)
+        }
+    })
+}
+
 // remove register
 EM2.drop = (name) => {
     delete EM2.models[name]
-    let modelNames = EM2.modelNames
+    let {modelNames} = EM2
     return modelNames.splice(modelNames.indexOf(name), 1)
 }
 
@@ -136,7 +165,8 @@ EM2.prototype = {
     },
 
     update(id, params) {
-        let options = Object.assign({method: 'PUT'}, {body: JSON.stringify(params)})
+        let options = EM2.fillFields(this.name, params)
+        // let options = Object.assign({method: 'PUT'}, {body: JSON.stringify(params)})
         return fetchApi(`${this.url}/${id}`, options)
     },
     
@@ -149,6 +179,7 @@ EM2.prototype = {
         let method = 'POST'
         if (params && params[this.pkey]) {
             method = 'PUT'
+            delete params[this.pkey]
         }
         let options = Object.assign({method}, {body: JSON.stringify(params)})
         return fetchApi(`${this.url}`, options)
