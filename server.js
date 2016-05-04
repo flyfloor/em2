@@ -17,6 +17,10 @@ app.get("/", function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
+app.get('/v1/user', function(res, res){
+    res.json({'name': 'jerry', age: 26})
+})
+
 app.listen(port, function(error) {
   if (error) {
     console.error(error);
