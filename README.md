@@ -1,3 +1,3 @@
-## Easyorm
+## EM2
 
-this is a front end ES6 easyorm
+this is a front end easy model manager
