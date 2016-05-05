@@ -29,7 +29,9 @@ const pushFieldNames = (fieldNames, name) => {
 
 // clear fields
 const clearFields = (fields) => {
-    let newFields = {}, fieldNames = [];
+    let newFields = {}
+    let fieldNames = []
+
     if (fields.constructor === Array) {
         fields.map(field => {
             if (field.constructor === String) {
@@ -49,6 +51,7 @@ const clearFields = (fields) => {
             }
         })
     }
+
     return {
         fields: newFields,
         fieldNames
@@ -114,30 +117,30 @@ const fetchApi = (url, options = {}) => {
 }
 
 
-const EM2 = (m, config = {}) => {
-    if (!m || typeof m !== 'object') {
+const EM2 = (model, config = {}) => {
+    if (!model || typeof model !== 'object') {
         console.error('model is invalid, did you forget to pass model object to new EM2?')
         return {}
     }
-    if (!m.hasOwnProperty('name')) {
-        console.warn('model needs a name, could not register to models')
+    if (!model.hasOwnProperty('name')) {
+        console.warn('model needs a name, could not register to model manager')
     }
     
     // init config, Model methods
-    m = Object.assign(m, EM2.prototype, initConfig(config))
+    model = Object.assign({fieldNames: null}, model, EM2.prototype, initConfig(config))
     
     // format url, fields
-    m.url = filterUrl(m.url)
-    let {fields, fieldNames} = clearFields(m.fields)
-    m.fields = fields
-    m.fieldNames = fieldNames
+    model.url = filterUrl(model.url)
+    let {fields, fieldNames} = clearFields(model.fields)
+    model.fields = fields
+    model.fieldNames = fieldNames
 
     // register Model and ModelNames
-    if (m.hasOwnProperty('name')) {
-        EM2.models[m.name] = m
-        EM2.modelNames.push(m.name)
+    if (model.hasOwnProperty('name')) {
+        EM2.models[model.name] = model
+        EM2.modelNames.push(model.name)
     }
-    return m
+    return model
 }
 
 // init EM2
@@ -148,16 +151,29 @@ EM2.trimParams = (modelName, params) => {
     /* field pedding */
     let model = EM2.models[modelName]
     if (!model) {
+        console.warn('Model is not defined')
         return params
     }
+
     let {fields} = model;
     Object.keys(fields).forEach(name => {
         let format = fields[name]
         if (params.hasOwnProperty(name)) {
             let value = params[name]
-            if ([undefined, null].indexOf(value) !== -1 || (value.constructor !== format.type && format.type)) {
-                params[name] = format.type.call(null)
+            let hasType = [undefined, null].indexOf(format.type) === -1
+            let hasVal = [undefined, null].indexOf(value) === -1
+            
+            // field has no type, and params's field has no value, remove key
+            if (!hasType && !hasVal) {
+                delete params[name]
             }
+            
+            // field has type, and params's field has no value or value type wrong, filled with default
+            if (hasType && (!hasVal || value.constructor !== format.type)) {
+                let hasDefault = [undefined, null].indexOf(value) === -1
+                params[name] = hasDefault ? format.default : format.type.call(null)
+            }
+
         } else if (format.type) {
             params[name] = format.type.call(null)
         }
@@ -209,4 +225,4 @@ EM2.prototype = {
     }
 }
 
-export default EM2
+module.exports = EM2

@@ -1,8 +1,8 @@
 import EM2 from '../model'
 
-let model = {
-    name: 'user',
+export default new EM2({
     url: 'v1/user',
+    name: 'user',
     fields: {
         name: {
             type: String,
@@ -11,13 +11,17 @@ let model = {
         age: {
             type: Number,
         },
-        sex: {
+        gender: {
             type: String,
             default: 'male'
+        },
+        photos: {
+            type: Array,
+        },
+        social: {
+            type: Object,
         }
     }
-}
-
-const User = new EM2(model, {pkey: 'id'})
-
-export default User
+}, {
+    pkey: 'id',
+})
