@@ -89,7 +89,7 @@ const initConfig = (config) => {
 }
 
 const serialize = (params) => {
-    if (params.constructor === Object) {
+    if (params && params.constructor === Object) {
         if (Object.getOwnPropertyNames(params).length === 0) {
             return ''
         }
@@ -118,10 +118,11 @@ const fetchApi = (url, options = {}) => {
 
 
 const EM2 = (model, config = {}) => {
-    if (!model || typeof model !== 'object') {
-        console.error('model is invalid, did you forget to pass model object to new EM2?')
+    if (model === undefined || model === null || model.constructor !== Object) {
+        console.error('model is invalid, did you forget to pass model object')
         return {}
     }
+
     if (!model.hasOwnProperty('name')) {
         console.warn('model needs a name, could not register to model manager')
     }

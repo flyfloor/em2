@@ -1,14 +1,20 @@
-jest.unmock('../src/model');
-jest.unmock('../src/example/User');
-jest.unmock('../src/example/Post');
-jest.unmock('../src/example/Comment');
-jest.unmock('../src/model');
+jest.unmock('../src/model')
+jest.unmock('../src/example/User')
+jest.unmock('../src/example/Post')
+jest.unmock('../src/example/Comment')
+jest.unmock('../src/model')
 
-const EM2 = require('../src/model');
+import EM2 from "../src/model"
 
-import User from "../src/example/User";
-import Post from "../src/example/Post";
-import Comment from "../src/example/Comment";
+import User from "../src/example/User"
+import Post from "../src/example/Post"
+import Comment from "../src/example/Comment"
+
+describe('Model wrong', () => {
+    it('model object wrong', () => {
+        expect(new EM2('a')).toEqual({})
+    })
+})
 
 describe('Model fields and fieldNames', () => {
     it('user fields shold be right', () => {
@@ -136,7 +142,7 @@ describe('Model fields filled with values', () => {
             uid: {},
             content: {}
         }
-        
+
         expect(EM2.trimParams('comment', params)).toEqual({
             _id: 1,
             age: 0,
