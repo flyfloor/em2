@@ -5,31 +5,47 @@
 //     return dist;
 // }
 
+const trimFieldSlot = (item) => {
+    let newItem = {
+        type: item.type,
+        default: item.default
+    }
+    if (item.hasOwnProperty('type') &&  [undefined, null].indexOf(item.type) === -1) {
+        if ([undefined, null].indexOf(item.default) !== -1 || item.default.constructor !== item.type) {
+            newItem.default = item.type.call(null);
+        }
+    }
+
+    return newItem
+}
+
+const pushFieldNames = (fieldNames, name) => {
+    let names = fieldNames.slice(0)
+    if (names.indexOf(name) === -1) {
+        names.push(name)
+    }
+    return names
+}
+
 // clear fields
 const clearFields = (fields) => {
     let newFields = {}, fieldNames = [];
     if (fields.constructor === Array) {
         fields.map(field => {
-            newFields[field] = {type: undefined, default: undefined}
+            if (field.constructor === String) {
+                newFields[field] = trimFieldSlot(field)
+                fieldNames = pushFieldNames(fieldNames, field)
+            } else if (field.constructor === Object && field.hasOwnProperty('name')){
+                let name = field.name
+                newFields[name] = trimFieldSlot(field)
+                fieldNames = pushFieldNames(fieldNames, name)
+            }
         })
-        fieldNames = fields.slice(0)
     } else if(fields.constructor === Object) {
         Object.keys(fields).map(name => {
             if (fields.hasOwnProperty(name)) {
-                if (fieldNames.indexOf(name) === -1) {
-                    fieldNames.push(name)
-                }
-                
-                let item = fields[name]
-                newFields[name] = {
-                    type: item.type,
-                    default: item.default
-                }
-                if (item.hasOwnProperty('type') &&  [undefined, null].indexOf(item.type) === -1) {
-                    if ([undefined, null].indexOf(item.default) !== -1 || item.default.constructor !== item.type) {
-                        newFields[name].default = item.type.call(null);
-                    }
-                }
+                newFields[name] = trimFieldSlot(fields[name])
+                fieldNames = pushFieldNames(fieldNames, name)
             }
         })
     }
@@ -89,11 +105,7 @@ const fetchApi = (url, options = {}) => {
     }
     return new Promise((resolve, rejected) => {
         fetch(url, options).then(response => {
-            if (response.status >= 200 && response.status < 300) {
-                resolve(response.json())
-            } else {
-                rejected(response)
-            }
+            response.status >= 200 && response.status < 300 ?  resolve(response.json()) : rejected(response)
         }).catch(rejected)
     })
 }
