@@ -87,6 +87,9 @@ const initConfig = (config) => {
 
 const serialize = (params) => {
     if (params.constructor === Object) {
+        if (Object.getOwnPropertyNames(params).length === 0) {
+            return ''
+        }
         return Object.keys(params).reduce((prev, current, index) => {
             if (index === 0) {
                 return `${prev}${current}=${params[current]}`
@@ -141,21 +144,25 @@ const EM2 = (m, config = {}) => {
 EM2.models = {}
 EM2.modelNames = []
 
-EM2.fillFields = (modelName, params) => {
+EM2.trimParams = (modelName, params) => {
+    /* field pedding */
     let model = EM2.models[modelName]
     if (!model) {
         return params
     }
     let {fields} = model;
     Object.keys(fields).forEach(name => {
+        let format = fields[name]
         if (params.hasOwnProperty(name)) {
-            let item = fields[name]
-            if (params[name].constructor !== item.type) {
-                params[name] = item.type()
+            let value = params[name]
+            if ([undefined, null].indexOf(value) !== -1 || (value.constructor !== format.type && format.type)) {
+                params[name] = format.type.call(null)
             }
-            console.log(params[name], name)
+        } else if (format.type) {
+            params[name] = format.type.call(null)
         }
     })
+    return params
 }
 
 // remove register
@@ -176,29 +183,29 @@ EM2.prototype = {
         return fetchApi(`${this.url}${serialize(params)}`)
     },
 
-    update(id, params) {
-        let options = EM2.fillFields(this.name, params)
-        // let options = Object.assign({method: 'PUT'}, {body: JSON.stringify(params)})
-        return fetchApi(`${this.url}/${id}`, options)
+    update(params) {
+        let _id = params[this.pkey]
+        delete params[this.pkey]
+        let options = EM2.trimParams(this.name, params)
+        options = Object.assign({method: 'PUT'}, {body: JSON.stringify(options)})
+        return fetchApi(`${this.url}/${_id}`, options)
     },
     
     create(params) {
-        let options = Object.assign({method: 'POST'}, {body: JSON.stringify(params)})
+        delete params[this.pkey]
+        let options = EM2.trimParams(this.name, params)
+        options = Object.assign({method: 'POST'}, {body: JSON.stringify(params)})
         return fetchApi(`${this.url}`, options)
     },
 
     save(params) {
-        let method = 'POST'
-        if (params && params[this.pkey]) {
-            method = 'PUT'
-            delete params[this.pkey]
-        }
-        let options = Object.assign({method}, {body: JSON.stringify(params)})
-        return fetchApi(`${this.url}`, options)
+        return params && params[this.pkey] ? this.update(params) : this.create(params)
     },
 
-    destroy(id, params) {
-        return fetchApi(`${this.url}/${id}${serialize(params)}`, {method: 'DELETE'})
+    destroy(params) {
+        let _id = params[this.pkey]
+        delete params[this.pkey]
+        return fetchApi(`${this.url}/${_id}${serialize(params)}`, {method: 'DELETE'})
     }
 }
 

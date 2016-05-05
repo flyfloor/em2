@@ -16,19 +16,6 @@ let model = {
             default: 'male'
         }
     }
-    // fields: [
-    //     {
-    //         name: 'name',
-    //         type: String,
-    //         default: '',
-    //     }, {
-    //         name: 'age',
-    //         type: Number,
-    //     }, {
-    //         name: 'sex',
-    //         type: 
-    //     }
-    // ],
 }
 
 const User = new EM2(model, {pkey: 'id'})
