@@ -192,8 +192,11 @@ EM2.drop = (name) => {
 
 EM2.prototype = {
     pkey: '_id',
-    findOne(id, params) {
-        return fetchApi(`${this.url}/${id}${serialize(params)}`)
+    findOne(_id, params) {
+        if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
+            return fetchApi(`${this.url}/${_id[this.pkey]}${serialize(params)}`) 
+        }
+        return fetchApi(`${this.url}/${_id}${serialize(params)}`)
     },
 
     find(params) {
