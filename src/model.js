@@ -2,10 +2,7 @@ require('whatwg-fetch')
 require('es6-promise').polyfill();
 
 const trimFieldSlot = (item) => {
-    let newItem = {
-        type: item.type,
-        default: item.default
-    }
+    let newItem = { type: item.type, default: item.default }
     if (item.hasOwnProperty('type') &&  [undefined, null].indexOf(item.type) === -1) {
         if ([undefined, null].indexOf(item.default) !== -1 || item.default.constructor !== item.type) {
             newItem.default = item.type.call(null);
@@ -16,9 +13,7 @@ const trimFieldSlot = (item) => {
 
 const pushFieldNames = (fieldNames, name) => {
     let names = fieldNames.slice(0)
-    if (names.indexOf(name) === -1) {
-        names.push(name)
-    }
+    if (names.indexOf(name) === -1) names.push(name)
     return names
 }
 
@@ -26,6 +21,8 @@ const pushFieldNames = (fieldNames, name) => {
 const clearFields = (fields) => {
     let newFields = {}
     let fieldNames = []
+
+    if (!fields) return { fields: newFields, fieldNames } 
 
     if (fields.constructor === Array) {
         fields.map(field => {
@@ -47,42 +44,40 @@ const clearFields = (fields) => {
         })
     }
 
-    return {
-        fields: newFields,
-        fieldNames
-    }
+    return { fields: newFields, fieldNames }
 }
 
 // filter url 
 const filterUrl = (url) => {
     if (typeof url !== 'string') url = '';
-
+    
+    // start with '/', but not http or https
     if (url.charAt(0) !== '/') {
         if (url.indexOf('http') !== 0 && url.indexOf('https') !== 0) {
             url = `/${url}`
         }
     }
-
+    
+    // if last is '/', remove it!
     let _l = url.length - 1;
-    if(_l > 0 && url.charAt(_l) === '/') {
-        url = url.slice(0, _l)
-    }
+    if(_l > 0 && url.charAt(_l) === '/')  url = url.slice(0, _l)
 
     return url
 }
 
-// init config
+// init config, temporarily set primary key
 const initConfig = (config) => {
     let _config = {}
     if (config) {
         let {pkey} = config
-        if (typeof pkey === 'string' && pkey !== '') {
-            _config.pkey = pkey
+        if (typeof pkey === 'string' && pkey) {
+            _config.pkey = pkey.trim()
         }
     }
     return _config
 }
 
+// serialize params object to ?a=1&b=2
 const serialize = (params) => {
     if (params && params.constructor === Object) {
         if (Object.getOwnPropertyNames(params).length === 0) {
@@ -98,6 +93,7 @@ const serialize = (params) => {
     return ''
 }
 
+// fetching api
 const fetchApi = (url, options = {}) => {
     options = options || {};
     let headers = options.headers || {}
@@ -123,7 +119,7 @@ const fetchApi = (url, options = {}) => {
     })
 }
 
-
+// main
 const em2 = (model, config = {}) => {
     if (model === undefined || model === null || model.constructor !== Object) {
         console.error('model is invalid, did you forget to pass model object')
@@ -151,12 +147,12 @@ const em2 = (model, config = {}) => {
     return model
 }
 
-// init em2
+// init em2 model, modelNames
 em2.models = {}
 em2.modelNames = []
 
+// trim params by model's fields
 em2.trimParams = (modelName, params) => {
-    /* field pedding */
     let model = em2.models[modelName]
     if (!model) {
         console.warn('Model is not defined')
@@ -172,9 +168,7 @@ em2.trimParams = (modelName, params) => {
             let hasVal = [undefined, null].indexOf(value) === -1
             
             // field has no type, and params's field has no value, remove key
-            if (!hasType && !hasVal) {
-                delete params[name]
-            }
+            if (!hasType && !hasVal) delete params[name]
             
             // field has type, and params's field has no value or value type wrong, filled with default
             if (hasType && (!hasVal || value.constructor !== format.type)) {
@@ -182,8 +176,8 @@ em2.trimParams = (modelName, params) => {
                 params[name] = hasDefault ? format.default : format.type.call(null)
             }
 
-        } else if (format.type) {
-            params[name] = format.type.call(null)
+        } else {
+            if (format.type) params[name] = format.type.call(null)
         }
     })
     return params

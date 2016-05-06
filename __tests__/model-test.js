@@ -2,16 +2,23 @@ jest.unmock('../src/model')
 jest.unmock('../example/User')
 jest.unmock('../example/Post')
 jest.unmock('../example/Comment')
+jest.unmock('../example/Food')
 
 import em2 from "../src/model"
 
 import User from "../example/User"
 import Post from "../example/Post"
 import Comment from "../example/Comment"
+import Food from "../example/Food"
 
 describe('Model wrong', () => {
     it('model object wrong', () => {
         expect(new em2('a')).toEqual({})
+    })
+
+    it('should filled with array field when given none fields', () => {
+        expect(Food.fields).toEqual({})
+        expect(Food.fieldNames).toEqual([])
     })
 })
 
