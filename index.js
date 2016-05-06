@@ -1,3 +1,3 @@
-var EM2 = require('./lib/model')
+var em2 = require('./lib/model')
 
-module.exports = EM2
+module.exports = em2

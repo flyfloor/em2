@@ -124,7 +124,7 @@ const fetchApi = (url, options = {}) => {
 }
 
 
-const EM2 = (model, config = {}) => {
+const em2 = (model, config = {}) => {
     if (model === undefined || model === null || model.constructor !== Object) {
         console.error('model is invalid, did you forget to pass model object')
         return {}
@@ -135,7 +135,7 @@ const EM2 = (model, config = {}) => {
     }
     
     // init config, Model methods
-    model = Object.assign({fieldNames: null}, model, EM2.prototype, initConfig(config))
+    model = Object.assign({fieldNames: null}, model, em2.prototype, initConfig(config))
     
     // format url, fields
     model.url = filterUrl(model.url)
@@ -145,19 +145,19 @@ const EM2 = (model, config = {}) => {
 
     // register Model and ModelNames
     if (model.hasOwnProperty('name')) {
-        EM2.models[model.name] = model
-        EM2.modelNames.push(model.name)
+        em2.models[model.name] = model
+        em2.modelNames.push(model.name)
     }
     return model
 }
 
-// init EM2
-EM2.models = {}
-EM2.modelNames = []
+// init em2
+em2.models = {}
+em2.modelNames = []
 
-EM2.trimParams = (modelName, params) => {
+em2.trimParams = (modelName, params) => {
     /* field pedding */
-    let model = EM2.models[modelName]
+    let model = em2.models[modelName]
     if (!model) {
         console.warn('Model is not defined')
         return params
@@ -190,14 +190,14 @@ EM2.trimParams = (modelName, params) => {
 }
 
 // remove register
-EM2.drop = (name) => {
-    delete EM2.models[name]
-    let {modelNames} = EM2
+em2.drop = (name) => {
+    delete em2.models[name]
+    let {modelNames} = em2
     return modelNames.splice(modelNames.indexOf(name), 1)
 }
 
 
-EM2.prototype = {
+em2.prototype = {
     pkey: '_id',
     findOne(_id, params) {
         if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
@@ -213,14 +213,14 @@ EM2.prototype = {
     update(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
-        let options = EM2.trimParams(this.name, params)
+        let options = em2.trimParams(this.name, params)
         options = Object.assign({method: 'PUT'}, {body: JSON.stringify(options)})
         return fetchApi(`${this.url}/${_id}`, options)
     },
     
     create(params) {
         delete params[this.pkey]
-        let options = EM2.trimParams(this.name, params)
+        let options = em2.trimParams(this.name, params)
         options = Object.assign({method: 'POST'}, {body: JSON.stringify(params)})
         return fetchApi(`${this.url}`, options)
     },
@@ -236,4 +236,4 @@ EM2.prototype = {
     }
 }
 
-module.exports = EM2
+module.exports = em2

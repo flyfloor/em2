@@ -1,18 +1,17 @@
 jest.unmock('../src/model')
-jest.unmock('../src/example/User')
-jest.unmock('../src/example/Post')
-jest.unmock('../src/example/Comment')
-jest.unmock('../src/model')
+jest.unmock('../example/User')
+jest.unmock('../example/Post')
+jest.unmock('../example/Comment')
 
-import EM2 from "../src/model"
+import em2 from "../src/model"
 
-import User from "../src/example/User"
-import Post from "../src/example/Post"
-import Comment from "../src/example/Comment"
+import User from "../example/User"
+import Post from "../example/Post"
+import Comment from "../example/Comment"
 
 describe('Model wrong', () => {
     it('model object wrong', () => {
-        expect(new EM2('a')).toEqual({})
+        expect(new em2('a')).toEqual({})
     })
 })
 
@@ -96,7 +95,7 @@ describe('Model fields filled with values', () => {
             name: 'jerry',
             social: {wechat: 'lacuna_fario'}
         }
-        expect(EM2.trimParams('user', params)).toEqual(params)
+        expect(em2.trimParams('user', params)).toEqual(params)
     })
 
     it('trim params:missing field', () => {
@@ -106,7 +105,7 @@ describe('Model fields filled with values', () => {
             photos: ['url'],
             name: 'jerry',
         }
-        expect(EM2.trimParams('user', params)).toEqual({
+        expect(em2.trimParams('user', params)).toEqual({
             _id: 1,
             age: 0,
             gender: 'male',
@@ -124,8 +123,8 @@ describe('Model fields filled with values', () => {
             photos: ['url'],
             content: {}
         }
-        // console.log(EM2.trimParams('post', params))
-        expect(EM2.trimParams('post', params)).toEqual({
+        // console.log(em2.trimParams('post', params))
+        expect(em2.trimParams('post', params)).toEqual({
             _id: 1,
             age: 0,
             title: 'title',
@@ -143,7 +142,7 @@ describe('Model fields filled with values', () => {
             content: {}
         }
 
-        expect(EM2.trimParams('comment', params)).toEqual({
+        expect(em2.trimParams('comment', params)).toEqual({
             _id: 1,
             age: 0,
             nickname: 'nickname',

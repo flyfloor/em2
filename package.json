@@ -1,7 +1,7 @@
 {
-  "name": "MM",
+  "name": "em2",
   "version": "0.0.1",
-  "description": "es6 MM",
+  "description": "es6 easy model manage",
   "main": "app.js",
   "scripts": {
     "start": "babel --presets es2015 --watch src/ --out-dir lib/ & NODE_ENV=dev node server.js",
@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jerryshew/MM"
+    "url": "https://github.com/jerryshew/em2"
   },
   "keywords": [
-    "MM, model manage"
+    "easy model manage"
   ],
   "author": "jerryshew",
   "license": "MIT",
-  "homepage": "https://github.com/jerryshew/MM",
+  "homepage": "https://github.com/jerryshew/em2",
   "devDependencies": {
     "autoprefixer": "^6.3.5",
     "babel-core": "^6.0.0",

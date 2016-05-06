@@ -1,6 +1,6 @@
-import EM2 from '../src/model' 
+import em2 from '../src/model' 
 
-export default new EM2({
+export default new em2({
     name: 'comment',
     url: '/v1/comment',
     fields: [
