@@ -1,9 +1,5 @@
-// const copyObj = (dist, source) => {
-//     Object.getOwnPropertyNames(source).forEach(name => {
-//         Object.defineProperty(dist, name, Object.getOwnPropertyDescriptor(source, name))
-//     })
-//     return dist;
-// }
+require('whatwg-fetch')
+require('es6-promise').polyfill();
 
 const trimFieldSlot = (item) => {
     let newItem = {
@@ -119,7 +115,7 @@ const fetchApi = (url, options = {}) => {
         options.credentials = 'same-origin'
     }
     options.headers = headers
-    
+
     return new Promise((resolve, rejected) => {
         fetch(url, options).then(response => {
             response.status >= 200 && response.status < 300 ?  resolve(response.json()) : rejected(response)
