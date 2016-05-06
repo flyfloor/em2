@@ -15,7 +15,6 @@ const trimFieldSlot = (item) => {
             newItem.default = item.type.call(null);
         }
     }
-
     return newItem
 }
 
@@ -105,10 +104,22 @@ const serialize = (params) => {
 
 const fetchApi = (url, options = {}) => {
     options = options || {};
+    let headers = options.headers || {}
 
     if (!options.hasOwnProperty('method')) {
         options.method = 'GET';
     }
+    if (!headers['Content-Type']) {
+        headers['Content-Type'] =  'application/x-www-form-urlencoded;charset=UTF-8'
+    }
+    if (!headers['X-Requested-With']) {
+        headers['X-Requested-With'] = 'XMLHttpRequest'
+    }
+    if (!options.credentials) {
+        options.credentials = 'same-origin'
+    }
+    options.headers = headers
+    
     return new Promise((resolve, rejected) => {
         fetch(url, options).then(response => {
             response.status >= 200 && response.status < 300 ?  resolve(response.json()) : rejected(response)

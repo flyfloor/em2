@@ -1,6 +1,6 @@
-import User from './src/example/user';
-import Post from './src/example/post';
-import Comment from './src/example/comment';
+import User from './example/user';
+import Post from './example/post';
+import Comment from './example/comment';
 
 let params = {id: 20, age: 20, name: 'jerry', gender: 'male'}
 let users = User.find(params).then(data => {

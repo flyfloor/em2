@@ -1,4 +1,4 @@
-import EM2 from '../model' 
+import EM2 from '../src/model' 
 
 export default new EM2({
     name: 'comment',
