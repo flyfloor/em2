@@ -69,9 +69,12 @@ const filterUrl = (url) => {
 const initConfig = (config) => {
     let _config = {}
     if (config) {
-        let {pkey} = config
+        let {pkey, parseData} = config
         if (typeof pkey === 'string' && pkey) {
             _config.pkey = pkey.trim()
+        }
+        if (typeof parseData === 'function') {
+            _config.parseData = parseData
         }
     }
     return _config
@@ -94,7 +97,7 @@ const serialize = (params) => {
 }
 
 // fetching api
-const fetchApi = (url, options = {}) => {
+const resloveData = (url, options = {}) => {
     options = options || {};
     let headers = options.headers || {}
 
@@ -190,18 +193,28 @@ em2.drop = (name) => {
     return modelNames.splice(modelNames.indexOf(name), 1)
 }
 
+const parseDataHandler = (obj, handler, func) => {
+    if (func === undefined) {
+        return handler
+    }
+    return handler.then(data => {
+        return func.call(obj, data) 
+    })
+}
 
 em2.prototype = {
     pkey: '_id',
     findOne(_id, params) {
+        let handler = resloveData(`${this.url}/${_id}${serialize(params)}`)
         if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
-            return fetchApi(`${this.url}/${_id[this.pkey]}${serialize(params)}`) 
+            handler = resloveData(`${this.url}/${_id[this.pkey]}${serialize(params)}`) 
         }
-        return fetchApi(`${this.url}/${_id}${serialize(params)}`)
+        return parseDataHandler(this, handler, this.parseData)
     },
 
     find(params) {
-        return fetchApi(`${this.url}${serialize(params)}`)
+        let handler = resloveData(`${this.url}${serialize(params)}`)
+        return parseDataHandler(this, handler, this.parseData)
     },
 
     update(params) {
@@ -209,14 +222,16 @@ em2.prototype = {
         delete params[this.pkey]
         let options = em2.trimParams(this.name, params)
         options = Object.assign({method: 'PUT'}, {body: JSON.stringify(options)})
-        return fetchApi(`${this.url}/${_id}`, options)
+        let handler = resloveData(`${this.url}/${_id}`, options)
+        return parseDataHandler(this, handler, this.parseData)
     },
     
     create(params) {
         delete params[this.pkey]
         let options = em2.trimParams(this.name, params)
         options = Object.assign({method: 'POST'}, {body: JSON.stringify(params)})
-        return fetchApi(`${this.url}`, options)
+        let handler = resloveData(`${this.url}`, options)
+        return parseDataHandler(this, handler, this.parseData)
     },
 
     save(params) {
@@ -226,7 +241,8 @@ em2.prototype = {
     destroy(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
-        return fetchApi(`${this.url}/${_id}${serialize(params)}`, {method: 'DELETE'})
+        let handler = resloveData(`${this.url}/${_id}${serialize(params)}`, {method: 'DELETE'})
+        return parseDataHandler(this, handler, this.parseData)
     }
 }
 

@@ -1,3 +1,12 @@
-import em2 from './src/model'
+import User from './example/User';
+import Post from './example/Post';
 
-window.em2 = em2
+User.findOne(20).then(data => {
+    console.log(data)
+})
+
+Post.findOne(20).then(data => {
+    console.log(data)
+})
+
+window.User = User

@@ -1,4 +1,7 @@
 import em2 from '../src/model' 
+import parseData from './parseData'
+
+console.log(parseData)
 
 export default new em2({
     url: 'v1/user',
@@ -21,7 +24,8 @@ export default new em2({
         social: {
             type: Object,
         }
-    }
+    },
 }, {
     pkey: 'id',
+    parseData
 })
