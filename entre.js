@@ -2,6 +2,15 @@ import User from './example/User'
 import Post from './example/Post'
 import Comment from './example/Comment'
 
+
+User.findOne(20).then(data => {
+
+})
+
+User.find().then(data => {
+    
+})
+
 User.request('get', '/v1/user', {id: 20, name: 'ss'}).then(data => {
     console.log(data)
 })

@@ -112,6 +112,7 @@ const em2 = (model, config = {}) => {
 
     if (!model.hasOwnProperty('name')) {
         console.error('model needs a name, could not register to model manager')
+        return
     }
     
     // init config, Model methods
