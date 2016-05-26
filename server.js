@@ -17,12 +17,12 @@ app.get("/", function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
-app.post('/v1/user*', function(res, res){
+app.use('/v1/user*', function(res, res){
     res.json({msg: '', code: 0, res: {'name': 'jerry', age: 26}})
 })
 
 
-app.get('/v1/post*', function(res, res){
+app.use('/v1/post*', function(res, res){
     res.json({msg: 'server bug, need repair', code: 1, res: null})
 })
 

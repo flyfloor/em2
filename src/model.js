@@ -263,20 +263,26 @@ em2.prototype = {
 
         return injection.call(this, resolveData(`${this.url}/${_id}${serialize(params)}`, {method: 'DELETE'}))
     },
-    request: {
-        get(url, params){
-            return injection.call(this, resolveData(`${url}${serialize(params)}`))
-        },
-        post(url, params){
-            params = Object.assign({method: 'POST'}, {body: serialize(params).slice(1)})
+    request(method, url, params) {
+        if (arguments.length < 2 || typeof method !== 'string' || typeof url !== 'string') {
+            return console.error('参数错误')
+        }
+        function _optionsRequest(method = 'OPTIONS', url, params){
+            params = Object.assign({method}, {body: serialize(params).slice(1)})
             return injection.call(this, resolveData(url, params))
-        },
-        put(url, params){
-            params = Object.assign({method: 'PUT'}, {body: serialize(params).slice(1)})
-            return injection.call(this, resolveData(url, params))
-        },
-        delete(url, params){
-            return injection.call(this, resolveData(`${url}${serialize(params)}`, {method: 'DELETE'}))
+        }
+        method = method.toLowerCase()
+        switch(method){
+            case 'get':
+                return injection.call(this, resolveData(`${url}${serialize(params)}`))
+            case 'post':
+                return _optionsRequest.call(this, 'POST', url, params)
+            case 'put':
+                return _optionsRequest.call(this, 'PUT', url, params)
+            case 'delete':
+                return injection.call(this, resolveData(`${url}${serialize(params)}`, {method: 'DELETE'}))
+            default:
+                return _optionsRequest.call(this, 'OPTIONS', url, params)
         }
     }
 }

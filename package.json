@@ -5,8 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "babel --presets es2015 --watch src/ --out-dir lib/ & NODE_ENV=dev node server.js",
-    "dev": "NODE_ENV=dev node server.js",
-    "prod": "NODE_ENV=prod node server.js",
+    "dev": "cross-env NODE_ENV=dev node server.js",
+    "prod": "cross-env NODE_ENV=prod node server.js",
     "build": "webpack -p",
     "build-dev": "webpack",
     "test": "jest"
