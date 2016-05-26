@@ -262,9 +262,12 @@ const reqDispatch = function(method = 'OPTIONS', url = '', params = {}){
 // prototype
 em2.prototype = {
     pkey: '_id',
+    nested(){
+        return this.url.indexOf(':') !== -1
+    },
     findOne(_id, params = {}) {
         // nested model
-        if (this.nested) {
+        if (this.nested()) {
             if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
                 let {s_url} = shuntNestedParams.call(this, _id)
                 let pkey = _id[this.pkey]
@@ -286,7 +289,7 @@ em2.prototype = {
 
     find(params) {
         // nested
-        if (this.nested) {
+        if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             delete s_params[this.pkey]
             return reqDispatch.call(this, 'GET', s_url, s_params)
@@ -299,7 +302,7 @@ em2.prototype = {
         let _id = params[this.pkey]
         delete params[this.pkey]
 
-        if (this.nested) {
+        if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, em2.trimParams(this.name, s_params))
         }
@@ -308,7 +311,7 @@ em2.prototype = {
     
     create(params) {
         delete params[this.pkey]
-        if (this.nested) {
+        if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             return reqDispatch.call(this, 'POST', s_url, em2.trimParams(this.name, s_params))
         }
@@ -323,7 +326,7 @@ em2.prototype = {
         let _id = params[this.pkey]
         delete params[this.pkey]
 
-        if (this.nested) {
+        if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             return reqDispatch.call(this, 'DELETE', `${s_url}/${_id}`, s_params)
         }
