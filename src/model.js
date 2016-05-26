@@ -219,38 +219,38 @@ const injection = function(handler){
     })
 }
 
+function _optionsRequest(method = 'OPTIONS', url, params){
+    params = Object.assign({method}, {body: serialize(params).slice(1)})
+    return injection.call(this, resolveData(url, params))
+}
+
 em2.prototype = {
     pkey: '_id',
     findOne(_id, params) {
         let handler = null;
         if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
-            handler = resolveData(`${this.url}/${_id[this.pkey]}${serialize(params)}`)
+            let _pkey = _id[this.pkey]
+            delete _id[this.pkey]
+            handler = resolveData(`${this.url}/${_pkey}${serialize(_id)}`)
         } else {
             handler = resolveData(`${this.url}/${_id}${serialize(params)}`)
         }
-        return injection.call(this, handler, { parseData, exception })
+        return injection.call(this, handler)
     },
 
     find(params) {
-        return injection.call(this, resolveData(`${this.url}${serialize(params)}`), { parseData, exception })
+        return injection.call(this, resolveData(`${this.url}${serialize(params)}`))
     },
 
     update(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
-
-        let options = em2.trimParams(this.name, params)
-        options = Object.assign({method: 'PUT'}, {body: serialize(options).slice(1)})
-
-        return injection.call(this, resolveData(`${this.url}/${_id}`, options))
+        return _optionsRequest.call(this, 'PUT', `${this.url}/${_id}`, em2.trimParams(this.name, params))
     },
     
     create(params) {
         delete params[this.pkey]
-        let options = em2.trimParams(this.name, params)
-        options = Object.assign({method: 'POST'}, {body: serialize(options).slice(1)})
-
-        return injection.call(this, resolveData(`${this.url}`, options))
+        return _optionsRequest.call(this, 'POST', this.url, em2.trimParams(this.name, params))
     },
 
     save(params) {
@@ -267,10 +267,7 @@ em2.prototype = {
         if (arguments.length < 2 || typeof method !== 'string' || typeof url !== 'string') {
             return console.error('参数错误')
         }
-        function _optionsRequest(method = 'OPTIONS', url, params){
-            params = Object.assign({method}, {body: serialize(params).slice(1)})
-            return injection.call(this, resolveData(url, params))
-        }
+        
         method = method.toLowerCase()
         switch(method){
             case 'get':

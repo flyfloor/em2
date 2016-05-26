@@ -6,12 +6,12 @@ User.request('get', '/v1/user', {id: 20, name: 'ss'}).then(data => {
 })
 
 
-Post.destroy({_id: 20, name: 'ss'}).then(data => {
+Post.findOne({_id: 20, name: 'ss'}).then(data => {
     console.log(data)
 })
 
-User.create({name: 's', age: 10}).then(data => {
-    
+User.save({id: 20, name: 's', age: 10}).then(data => {
+    console.log(data)
 })
 
 window.User = User
