@@ -106,12 +106,12 @@ const serialize = (params) => {
 // main
 const em2 = (model, config = {}) => {
     if (model === undefined || model === null || model.constructor !== Object) {
-        console.error('model is invalid, did you forget to pass model object')
+        console.error('model is invalid, model should be an object')
         return {}
     }
 
     if (!model.hasOwnProperty('name')) {
-        console.warn('model needs a name, could not register to model manager')
+        console.error('model needs a name, could not register to model manager')
     }
     
     // init config, Model methods
@@ -139,7 +139,7 @@ em2.modelNames = []
 em2.trimParams = (modelName, params) => {
     let model = em2.models[modelName]
     if (!model) {
-        console.warn('Model is not defined')
+        console.warn('model is not defined')
         return params
     }
 
@@ -330,7 +330,7 @@ em2.prototype = {
     },
     request(method, url, params) {
         if (arguments.length < 2 || typeof method !== 'string' || typeof url !== 'string') {
-            return console.error('参数错误')
+            return console.error('params wrong, need three arguments: method, url, params(optional query and fetch setting)')
         }
 
         return reqDispatch.call(this, method, url, params)
