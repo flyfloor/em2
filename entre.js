@@ -1,7 +1,12 @@
-import User from './example/User';
-import Post from './example/Post';
+import User from './example/User'
+import Post from './example/Post'
+import Comment from './example/Comment'
 
 User.request('get', '/v1/user', {id: 20, name: 'ss'}).then(data => {
+    console.log(data)
+})
+
+Comment.findOne({_id: 20, user_id: '239233', name: 's', age: 2}).then(data => {
     console.log(data)
 })
 
@@ -10,8 +15,10 @@ Post.findOne({_id: 20, name: 'ss'}).then(data => {
     console.log(data)
 })
 
-User.save({id: 20, name: 's', age: 10}).then(data => {
+Post.find({name: 'ss'}).then(data => {
     console.log(data)
 })
 
-window.User = User
+User.save({id: 20, name: 's', age: 10}).then(data => {
+    console.log(data)
+})

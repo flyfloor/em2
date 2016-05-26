@@ -1,6 +1,8 @@
 require('whatwg-fetch')
 require('es6-promise').polyfill();
 
+const METHODS = ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
+
 const trimFieldSlot = (item) => {
     let newItem = { type: item.type, default: item.default }
     if (item.hasOwnProperty('type') &&  [undefined, null].indexOf(item.type) === -1) {
@@ -59,8 +61,8 @@ const filterUrl = (url) => {
     }
     
     // if last is '/', remove it!
-    let _l = url.length - 1;
-    if(_l > 0 && url.charAt(_l) === '/')  url = url.slice(0, _l)
+    let l = url.length - 1;
+    if(l > 0 && url.charAt(l) === '/')  url = url.slice(0, l)
 
     return url
 }
@@ -100,32 +102,6 @@ const serialize = (params) => {
     return ''
 }
 
-// fetching api
-const resolveData = function(url, params = {}){
-    params = params || {};
-    let headers = params.headers || {}
-
-    if (!params.hasOwnProperty('method')) {
-        params.method = 'GET';
-    }
-
-    if (!headers['Content-Type']) {
-        headers['Content-Type'] =  'application/x-www-form-urlencoded;charset=UTF-8'
-    }
-    if (!headers['X-Requested-With']) {
-        headers['X-Requested-With'] = 'XMLHttpRequest'
-    }
-    if (!params.credentials) {
-        params.credentials = 'same-origin'
-    }
-    params.headers = headers
-
-    return new Promise((resolve, rejected) => {
-        fetch(url, params).then(response => {
-            response.status >= 200 && response.status < 300 ?  resolve(response.json()) : rejected(response)
-        }).catch(rejected)
-    })
-}
 
 // main
 const em2 = (model, config = {}) => {
@@ -146,7 +122,7 @@ const em2 = (model, config = {}) => {
     let {fields, fieldNames} = clearFields(model.fields)
     model.fields = fields
     model.fieldNames = fieldNames
-
+    
     // register Model and ModelNames
     if (model.hasOwnProperty('name')) {
         em2.models[model.name] = model
@@ -180,8 +156,7 @@ em2.trimParams = (modelName, params) => {
             
             // field has type, and params's field has no value or value type wrong, filled with default
             if (hasType && (!hasVal || value.constructor !== format.type)) {
-                let hasDefault = [undefined, null].indexOf(value) === -1
-                params[name] = hasDefault ? format.default : format.type.call(null)
+                params[name] = [undefined, null].indexOf(value) === -1 ? format.default : format.type.call(null)
             }
 
         } else {
@@ -198,7 +173,35 @@ em2.drop = (name) => {
     return modelNames.splice(modelNames.indexOf(name), 1)
 }
 
-const injection = function(handler){
+// reslove Data api
+const fetchData = function(url, params = {}){
+    params = params || {};
+    let headers = params.headers || {}
+
+    if (!params.hasOwnProperty('method')) {
+        params.method = 'GET';
+    }
+
+    if (!headers['Content-Type']) {
+        headers['Content-Type'] =  'application/x-www-form-urlencoded;charset=UTF-8'
+    }
+    if (!headers['X-Requested-With']) {
+        headers['X-Requested-With'] = 'XMLHttpRequest'
+    }
+    if (!params.credentials) {
+        params.credentials = 'same-origin'
+    }
+    params.headers = headers
+
+    return new Promise((resolve, rejected) => {
+        fetch(url, params).then(response => {
+            response.status >= 200 && response.status < 300 ?  resolve(response.json()) : rejected(response)
+        }).catch(rejected)
+    })
+}
+
+// res injection
+const resInject = function(handler){
     let that = this || {}
     let {parseData, exception} = that
     if (typeof parseData === 'function') {
@@ -219,38 +222,96 @@ const injection = function(handler){
     })
 }
 
-function _optionsRequest(method = 'OPTIONS', url, params){
-    params = Object.assign({method}, {body: serialize(params).slice(1)})
-    return injection.call(this, resolveData(url, params))
+// nested url and params seperate
+const shuntNestedParams = function(obj){
+    if ([undefined, null].indexOf(obj) !== -1) {
+        throw('参数错误')
+    }
+
+    let s_url = Object.keys(obj).reduce((prev, name) => {
+        if (obj.hasOwnProperty(name)) {
+            let reg = new RegExp('/:' + name, 'gi')
+            if (prev.match(reg)) {
+                return prev.replace(reg, '/' + obj[name])
+            }
+        }
+        return prev
+    }, this.url)
+
+    return {
+        s_url,
+        s_params: obj
+    }
 }
 
+const reqDispatch = function(method = 'OPTIONS', url = '', params = {}){
+    method = method.toUpperCase()
+    if (METHODS.indexOf(method) === -1) method = 'OPTIONS'
+    if (['HEAD', 'GET'].indexOf(method) !== -1) {
+        return resInject.call(this, fetchData(`${url}${serialize(params)}`))
+    }
+    if (method === 'DELETE') {
+        return resInject.call(this, fetchData(`${url}${serialize(params)}`, {method: 'DELETE'})) 
+    }
+
+    params = Object.assign({method}, {body: serialize(params).slice(1)})
+    return resInject.call(this, fetchData(url, params))
+}
+
+// prototype
 em2.prototype = {
     pkey: '_id',
-    findOne(_id, params) {
-        let handler = null;
-        if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
-            let _pkey = _id[this.pkey]
-            delete _id[this.pkey]
-            handler = resolveData(`${this.url}/${_pkey}${serialize(_id)}`)
-        } else {
-            handler = resolveData(`${this.url}/${_id}${serialize(params)}`)
+    findOne(_id, params = {}) {
+        // nested model
+        if (this.nested) {
+            if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
+                let {s_url} = shuntNestedParams.call(this, _id)
+                let pkey = _id[this.pkey]
+                delete _id[this.pkey]
+                return reqDispatch.call(this, 'GET', `${s_url}/${pkey}`, params)
+            }
+            throw(`wrong params, first argument should be an object, and has property in model's url(just like :id) and ${this.pkey}`)
         }
-        return injection.call(this, handler)
+
+        // basic
+        if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
+            let pkey = _id[this.pkey]
+            delete _id[this.pkey]
+            return reqDispatch.call(this, 'GET', `${this.url}/${pkey}`, _id)
+        }
+
+        return reqDispatch.call(this, 'GET', `${this.url}/${_id}`, params)
     },
 
     find(params) {
-        return injection.call(this, resolveData(`${this.url}${serialize(params)}`))
+        // nested
+        if (this.nested) {
+            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            delete s_params[this.pkey]
+            return reqDispatch.call(this, 'GET', s_url, s_params)
+        }
+        // basic
+        return reqDispatch.call(this, 'GET', this.url, params)
     },
 
     update(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
-        return _optionsRequest.call(this, 'PUT', `${this.url}/${_id}`, em2.trimParams(this.name, params))
+
+        if (this.nested) {
+            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, em2.trimParams(this.name, s_params))
+        }
+        return reqDispatch.call(this, 'PUT', `${this.url}/${_id}`, em2.trimParams(this.name, params))
     },
     
     create(params) {
         delete params[this.pkey]
-        return _optionsRequest.call(this, 'POST', this.url, em2.trimParams(this.name, params))
+        if (this.nested) {
+            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            return reqDispatch.call(this, 'POST', s_url, em2.trimParams(this.name, s_params))
+        }
+        return reqDispatch.call(this, 'POST', this.url, em2.trimParams(this.name, params))
     },
 
     save(params) {
@@ -261,26 +322,18 @@ em2.prototype = {
         let _id = params[this.pkey]
         delete params[this.pkey]
 
-        return injection.call(this, resolveData(`${this.url}/${_id}${serialize(params)}`, {method: 'DELETE'}))
+        if (this.nested) {
+            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            return reqDispatch.call(this, 'DELETE', `${s_url}/${_id}`, s_params)
+        }
+        return reqDispatch.call(this, 'DELETE', `${this.url}/${_id}`, params)
     },
     request(method, url, params) {
         if (arguments.length < 2 || typeof method !== 'string' || typeof url !== 'string') {
             return console.error('参数错误')
         }
-        
-        method = method.toLowerCase()
-        switch(method){
-            case 'get':
-                return injection.call(this, resolveData(`${url}${serialize(params)}`))
-            case 'post':
-                return _optionsRequest.call(this, 'POST', url, params)
-            case 'put':
-                return _optionsRequest.call(this, 'PUT', url, params)
-            case 'delete':
-                return injection.call(this, resolveData(`${url}${serialize(params)}`, {method: 'DELETE'}))
-            default:
-                return _optionsRequest.call(this, 'OPTIONS', url, params)
-        }
+
+        return reqDispatch.call(this, method, url, params)
     }
 }
 
