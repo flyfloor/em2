@@ -69,12 +69,16 @@ const filterUrl = (url) => {
 const initConfig = (config) => {
     let _config = {}
     if (config) {
-        let {pkey, parseData} = config
+        let {pkey, parseData, exception} = config
         if (typeof pkey === 'string' && pkey) {
             _config.pkey = pkey.trim()
         }
         if (typeof parseData === 'function') {
             _config.parseData = parseData
+        }
+
+        if (typeof exception === 'function') {
+            _config.exception = exception
         }
     }
     return _config
@@ -97,26 +101,27 @@ const serialize = (params) => {
 }
 
 // fetching api
-const resloveData = (url, options = {}) => {
-    options = options || {};
-    let headers = options.headers || {}
+const resolveData = function(url, params = {}){
+    params = params || {};
+    let headers = params.headers || {}
 
-    if (!options.hasOwnProperty('method')) {
-        options.method = 'GET';
+    if (!params.hasOwnProperty('method')) {
+        params.method = 'GET';
     }
+
     if (!headers['Content-Type']) {
         headers['Content-Type'] =  'application/x-www-form-urlencoded;charset=UTF-8'
     }
     if (!headers['X-Requested-With']) {
         headers['X-Requested-With'] = 'XMLHttpRequest'
     }
-    if (!options.credentials) {
-        options.credentials = 'same-origin'
+    if (!params.credentials) {
+        params.credentials = 'same-origin'
     }
-    options.headers = headers
+    params.headers = headers
 
     return new Promise((resolve, rejected) => {
-        fetch(url, options).then(response => {
+        fetch(url, params).then(response => {
             response.status >= 200 && response.status < 300 ?  resolve(response.json()) : rejected(response)
         }).catch(rejected)
     })
@@ -193,45 +198,59 @@ em2.drop = (name) => {
     return modelNames.splice(modelNames.indexOf(name), 1)
 }
 
-const parseDataHandler = (obj, handler, func) => {
-    if (func === undefined) {
-        return handler
+const injection = function(handler){
+    let that = this || {}
+    let {parseData, exception} = that
+    if (typeof parseData === 'function') {
+        return handler.then(data => {
+            return parseData.call(this, data) 
+        }).catch(error => {
+            if (typeof exception === 'function') {
+                return exception.call(this, error)
+            }
+            return error
+        })
     }
-    return handler.then(data => {
-        return func.call(obj, data) 
+    return handler.catch(error => {
+        if (typeof exception === 'function') {
+            return exception.call(this, error)
+        }
+        return error
     })
 }
 
 em2.prototype = {
     pkey: '_id',
     findOne(_id, params) {
-        let handler = resloveData(`${this.url}/${_id}${serialize(params)}`)
+        let handler = null;
         if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
-            handler = resloveData(`${this.url}/${_id[this.pkey]}${serialize(params)}`) 
+            handler = resolveData(`${this.url}/${_id[this.pkey]}${serialize(params)}`)
+        } else {
+            handler = resolveData(`${this.url}/${_id}${serialize(params)}`)
         }
-        return parseDataHandler(this, handler, this.parseData)
+        return injection.call(this, handler, { parseData, exception })
     },
 
     find(params) {
-        let handler = resloveData(`${this.url}${serialize(params)}`)
-        return parseDataHandler(this, handler, this.parseData)
+        return injection.call(this, resolveData(`${this.url}${serialize(params)}`), { parseData, exception })
     },
 
     update(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
+
         let options = em2.trimParams(this.name, params)
-        options = Object.assign({method: 'PUT'}, {body: JSON.stringify(options)})
-        let handler = resloveData(`${this.url}/${_id}`, options)
-        return parseDataHandler(this, handler, this.parseData)
+        options = Object.assign({method: 'PUT'}, {body: serialize(options).slice(1)})
+
+        return injection.call(this, resolveData(`${this.url}/${_id}`, options))
     },
     
     create(params) {
         delete params[this.pkey]
         let options = em2.trimParams(this.name, params)
-        options = Object.assign({method: 'POST'}, {body: JSON.stringify(params)})
-        let handler = resloveData(`${this.url}`, options)
-        return parseDataHandler(this, handler, this.parseData)
+        options = Object.assign({method: 'POST'}, {body: serialize(options).slice(1)})
+
+        return injection.call(this, resolveData(`${this.url}`, options))
     },
 
     save(params) {
@@ -241,8 +260,24 @@ em2.prototype = {
     destroy(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
-        let handler = resloveData(`${this.url}/${_id}${serialize(params)}`, {method: 'DELETE'})
-        return parseDataHandler(this, handler, this.parseData)
+
+        return injection.call(this, resolveData(`${this.url}/${_id}${serialize(params)}`, {method: 'DELETE'}))
+    },
+    request: {
+        get(url, params){
+            return injection.call(this, resolveData(`${url}${serialize(params)}`))
+        },
+        post(url, params){
+            params = Object.assign({method: 'POST'}, {body: serialize(params).slice(1)})
+            return injection.call(this, resolveData(url, params))
+        },
+        put(url, params){
+            params = Object.assign({method: 'PUT'}, {body: serialize(params).slice(1)})
+            return injection.call(this, resolveData(url, params))
+        },
+        delete(url, params){
+            return injection.call(this, resolveData(`${url}${serialize(params)}`, {method: 'DELETE'}))
+        }
     }
 }
 
