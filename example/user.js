@@ -1,7 +1,5 @@
 import em2 from '../src/model' 
-import parseData from './parseData'
-
-console.log(parseData)
+import {parseData, exception} from './parseData'
 
 export default new em2({
     url: 'v1/user',
@@ -27,5 +25,6 @@ export default new em2({
     },
 }, {
     pkey: 'id',
-    parseData
+    parseData,
+    exception
 })

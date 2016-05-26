@@ -1,4 +1,4 @@
-export default function(data){
+export function parseData(data){
     let {pkey} = this
     if (pkey) {
         console.log('pkey ==>', pkey)
@@ -9,4 +9,8 @@ export default function(data){
         console.info('ok')
     }
     return data.res
+}
+
+export function exception(error) {
+    console.log('custom error handler ==>', error)
 }
