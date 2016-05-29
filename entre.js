@@ -15,7 +15,7 @@ User.request('get', '/v1/user', {id: 20, name: 'ss'}).then(data => {
     console.log(data)
 })
 
-Comment.findOne({_id: 20, user_id: '239233', name: 's', age: 2}).then(data => {
+Comment.findOne({_id: 20, user_id: '239233'}, {content: undefined, name: 's', age: 2}).then(data => {
     console.log(data)
 })
 

@@ -93,7 +93,10 @@ const serialize = (params) => {
             return ''
         }
         return Object.keys(params).reduce((prev, current, index) => {
-            if (index === 0) {
+            if ([undefined, null].indexOf(params[current]) !== -1) {
+                return prev
+            }
+            if (prev.slice(-1) === '?') {
                 return `${prev}${current}=${params[current]}`
             }
             return `${prev}&${current}=${params[current]}`
