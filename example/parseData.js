@@ -5,6 +5,7 @@ export function parseData(data){
     // }
     if (data.code !== 0) {
         console.error('server wrong', data.msg)
+        throw(data)
     } else {
         console.info('ok')
     }
@@ -13,4 +14,5 @@ export function parseData(data){
 
 export function exception(error) {
     console.log('custom error handler ==>', error)
+    return error
 }

@@ -197,33 +197,32 @@ const fetchData = function(url, params = {}){
     }
     params.headers = headers
 
-    return new Promise((resolve, rejected) => {
+    return new Promise((resolve, reject) => {
         fetch(url, params).then(response => {
-            response.status >= 200 && response.status < 300 ?  resolve(response.json()) : rejected(response)
-        }).catch(rejected)
+            response.status >= 200 && response.status < 300 ?  resolve(response.json()) : reject(response)
+        }).catch(reject)
     })
 }
 
 // res injection
-const resInject = function(handler){
+const resInject = function(pms){
     let that = this || {}
     let {parseData, exception} = that
-    if (typeof parseData === 'function') {
-        return handler.then(data => {
-            return parseData.call(this, data) 
-        }).catch(error => {
-            if (typeof exception === 'function') {
-                return exception.call(this, error)
-            }
-            return error
-        })
-    }
-    return handler.catch(error => {
+
+    const errFunc = (error) => {
         if (typeof exception === 'function') {
             return exception.call(this, error)
         }
         return error
-    })
+    }
+
+    if (typeof parseData === 'function') {
+        return pms.then(data => {
+            return parseData.call(this, data)
+        }).catch(errFunc)
+    }
+
+    return pms.catch(errFunc)
 }
 
 // nested url and params seperate
