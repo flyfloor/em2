@@ -236,7 +236,9 @@ const shuntNestedParams = function(obj){
         if (obj.hasOwnProperty(name)) {
             let reg = new RegExp('/:' + name, 'gi')
             if (prev.match(reg)) {
-                return prev.replace(reg, '/' + obj[name])
+                let val = obj[name]
+                delete obj[name]
+                return prev.replace(reg, '/' + val)
             }
         }
         return prev

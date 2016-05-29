@@ -19,6 +19,10 @@ Comment.findOne({_id: 20, user_id: '239233'}, {content: undefined, name: 's', ag
     console.log(data)
 })
 
+Comment.find({_id: 20, user_id: '239233', content: undefined, name: 's', age: 2}).then(data => {
+    console.log(data)
+})
+
 
 Post.findOne({_id: 20, name: 'ss'}).then(data => {
     console.log(data)
