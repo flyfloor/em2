@@ -48,7 +48,7 @@
     "jest-cli": "^0.9.2"
   },
   "dependencies": {
-    "es6-promise": "^3.1.2",
+    "rsvp": "^3.2.1",
     "whatwg-fetch": "^1.0.0"
   }
 }

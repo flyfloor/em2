@@ -1,5 +1,5 @@
 require('whatwg-fetch')
-require('es6-promise').polyfill();
+const RSVP = require('rsvp');
 
 const METHODS = ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
 
@@ -180,7 +180,7 @@ const fetchData = function(url, params = {}){
     }
     params.headers = headers
 
-    return new Promise((resolve, reject) => {
+    return new RSVP.Promise((resolve, reject) => {
         return fetch(url, params).then(response => {
             response.status >= 200 && response.status < 300 ?  resolve(response.json()) : reject(response)
         }).catch(reject)
@@ -194,10 +194,9 @@ const resInject = function(pms){
 
     const errFunc = (error) => {
         if (typeof exception === 'function') {
-            return exception.call(this, error)
+            return exception.call(this, error).finally(null)
         }
-        // throw(error)
-        return error
+        return error.finally(null)
     }
 
     if (typeof parseData === 'function') {
