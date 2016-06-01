@@ -126,28 +126,18 @@ const em2 = (model, config = {}) => {
     let {fields, fieldNames} = clearFields(model.fields)
     model.fields = fields
     model.fieldNames = fieldNames
-    
-    // register Model and ModelNames
-    if (model.hasOwnProperty('name')) {
-        em2.models[model.name] = model
-        em2.modelNames.push(model.name)
-    }
+
     return model
 }
 
-// init em2 model, modelNames
-em2.models = {}
-em2.modelNames = []
-
 // trim params by model's fields
-em2.trimParams = (modelName, params) => {
-    let model = em2.models[modelName]
-    if (!model) {
+const trimParams = function(modelName, params) {
+    if (!this) {
         console.warn('model is not defined')
         return params
     }
 
-    let {fields} = model;
+    let {fields} = this;
     Object.keys(fields).forEach(name => {
         let format = fields[name]
         if (params.hasOwnProperty(name)) {
@@ -168,13 +158,6 @@ em2.trimParams = (modelName, params) => {
         }
     })
     return params
-}
-
-// remove register
-em2.drop = (name) => {
-    delete em2.models[name]
-    let {modelNames} = em2
-    return modelNames.splice(modelNames.indexOf(name), 1)
 }
 
 // reslove Data api
@@ -198,7 +181,7 @@ const fetchData = function(url, params = {}){
     params.headers = headers
 
     return new Promise((resolve, reject) => {
-        fetch(url, params).then(response => {
+        return fetch(url, params).then(response => {
             response.status >= 200 && response.status < 300 ?  resolve(response.json()) : reject(response)
         }).catch(reject)
     })
@@ -213,6 +196,7 @@ const resInject = function(pms){
         if (typeof exception === 'function') {
             return exception.call(this, error)
         }
+        // throw(error)
         return error
     }
 
@@ -308,18 +292,18 @@ em2.prototype = {
 
         if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
-            return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, em2.trimParams(this.name, s_params))
+            return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, trimParams.call(this, this.name, s_params))
         }
-        return reqDispatch.call(this, 'PUT', `${this.url}/${_id}`, em2.trimParams(this.name, params))
+        return reqDispatch.call(this, 'PUT', `${this.url}/${_id}`, trimParams.call(this, this.name, params))
     },
     
     create(params) {
         delete params[this.pkey]
         if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
-            return reqDispatch.call(this, 'POST', s_url, em2.trimParams(this.name, s_params))
+            return reqDispatch.call(this, 'POST', s_url, trimParams.call(this, this.name, s_params))
         }
-        return reqDispatch.call(this, 'POST', this.url, em2.trimParams(this.name, params))
+        return reqDispatch.call(this, 'POST', this.url, trimParams.call(this, this.name, params))
     },
 
     save(params) {
