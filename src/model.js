@@ -130,36 +130,6 @@ const em2 = (model, config = {}) => {
     return model
 }
 
-// trim params by model's fields
-const trimParams = function(modelName, params) {
-    if (!this) {
-        console.warn('model is not defined')
-        return params
-    }
-
-    let {fields} = this;
-    Object.keys(fields).forEach(name => {
-        let format = fields[name]
-        if (params.hasOwnProperty(name)) {
-            let value = params[name]
-            let hasType = [undefined, null].indexOf(format.type) === -1
-            let hasVal = [undefined, null].indexOf(value) === -1
-            
-            // field has no type, and params's field has no value, remove key
-            if (!hasType && !hasVal) delete params[name]
-            
-            // field has type, and params's field has no value or value type wrong, filled with default
-            if (hasType && (!hasVal || value.constructor !== format.type)) {
-                params[name] = [undefined, null].indexOf(value) === -1 ? format.default : format.type.call(null)
-            }
-
-        } else {
-            if (format.type) params[name] = format.type.call(null)
-        }
-    })
-    return params
-}
-
 // reslove Data api
 const fetchData = function(url, params = {}){
     params = params || {};
@@ -252,6 +222,29 @@ em2.prototype = {
     nested(){
         return this.url.indexOf(':') !== -1
     },
+    trimParams(params) {
+        let {fields} = this;
+        Object.keys(fields).forEach(name => {
+            let format = fields[name]
+            if (params.hasOwnProperty(name)) {
+                let value = params[name]
+                let hasType = [undefined, null].indexOf(format.type) === -1
+                let hasVal = [undefined, null].indexOf(value) === -1
+                
+                // field has no type, and params's field has no value, remove key
+                if (!hasType && !hasVal) delete params[name]
+                
+                // field has type, and params's field has no value or value type wrong, filled with default
+                if (hasType && (!hasVal || value.constructor !== format.type)) {
+                    params[name] = [undefined, null].indexOf(value) === -1 ? format.default : format.type.call(null)
+                }
+
+            } else {
+                if (format.type) params[name] = format.type.call(null)
+            }
+        })
+        return params
+    },
     findOne(_id, params = {}) {
         // nested model
         if (this.nested()) {
@@ -291,18 +284,18 @@ em2.prototype = {
 
         if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
-            return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, trimParams.call(this, this.name, s_params))
+            return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, this.trimParams.call(this, s_params))
         }
-        return reqDispatch.call(this, 'PUT', `${this.url}/${_id}`, trimParams.call(this, this.name, params))
+        return reqDispatch.call(this, 'PUT', `${this.url}/${_id}`, this.trimParams.call(this, params))
     },
     
     create(params) {
         delete params[this.pkey]
         if (this.nested()) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
-            return reqDispatch.call(this, 'POST', s_url, trimParams.call(this, this.name, s_params))
+            return reqDispatch.call(this, 'POST', s_url, this.trimParams.call(this, s_params))
         }
-        return reqDispatch.call(this, 'POST', this.url, trimParams.call(this, this.name, params))
+        return reqDispatch.call(this, 'POST', this.url, this.trimParams.call(this, params))
     },
 
     save(params) {
