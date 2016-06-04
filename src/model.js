@@ -164,9 +164,9 @@ const resInject = function(pms){
 
     const errFunc = (error) => {
         if (typeof exception === 'function') {
-            return exception.call(this, error).finally(null)
+            throw exception.call(this, error)
         }
-        return error.finally(null)
+        throw error
     }
 
     if (typeof parseData === 'function') {

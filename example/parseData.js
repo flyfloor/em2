@@ -4,15 +4,15 @@ export function parseData(data){
     //     console.log(this.name, '==> pkey ==>', pkey)
     // }
     if (data.code !== 0) {
-        console.error('server wrong', data.msg)
+        console.error('parse wrong =>', data.msg)
         throw(data)
     } else {
-        console.info('ok')
+        console.info('parse success!')
     }
     return data.res
 }
 
 export function exception(error) {
-    console.log('custom error handler ==>', error)
+    console.log('custom error =>', error)
     return error
 }
