@@ -1,4 +1,4 @@
-export function parseData(data){
+const parseData = (data) => {
     let {pkey} = this
     // if (pkey) {
     //     console.log(this.name, '==> pkey ==>', pkey)
@@ -16,3 +16,5 @@ export function exception(error) {
     console.log('custom error =>', error)
     return error
 }
+
+export {parseData}

@@ -86,48 +86,37 @@ const initConfig = (config) => {
     return _config
 }
 
-// serialize params object to ?a=1&b=2
-const serialize = (params) => {
-    if (params && params.constructor === Object) {
-        if (Object.getOwnPropertyNames(params).length === 0) {
-            return ''
-        }
-        return Object.keys(params).reduce((prev, current, index) => {
-            if ([undefined, null].indexOf(params[current]) !== -1) {
-                return prev
-            }
-            if (prev.slice(-1) === '?') {
-                return `${prev}${current}=${params[current]}`
-            }
-            return `${prev}&${current}=${params[current]}`
-        }, '?')
-    }
-    return ''
+// extend
+const extend = function(Child, Parent) {
+    Child.prototype = new Parent()
+    Child.prototype.constructor = Child
+    return Child
 }
 
 
 // main
-const em2 = (model, config = {}) => {
-    if (model === undefined || model === null || model.constructor !== Object) {
+const em2 = (initObj, config = {}) => {
+    if (initObj === undefined || initObj === null || initObj.constructor !== Object) {
         console.error('model is invalid, model should be an object')
         return {}
     }
 
-    if (!model.hasOwnProperty('name')) {
+    if (!initObj.hasOwnProperty('name')) {
         console.error('model needs a name, could not register to model manager')
         return
     }
     
     // init config, Model methods
-    model = Object.assign({fieldNames: null}, model, em2.prototype, initConfig(config))
-    
-    // format url, fields
-    model.url = filterUrl(model.url)
-    let {fields, fieldNames} = clearFields(model.fields)
-    model.fields = fields
-    model.fieldNames = fieldNames
+    let _extendModel = extend(function(){}, Model)
+    let _model = Object.assign(new _extendModel(), initConfig(config))
 
-    return model
+    // format url, fields
+    _model.url = filterUrl(initObj.url)
+    let {fields, fieldNames} = clearFields(initObj.fields)
+    _model.fields = fields
+    _model.fieldNames = fieldNames
+
+    return _model
 }
 
 // reslove Data api
@@ -157,72 +146,95 @@ const fetchData = function(url, params = {}){
     })
 }
 
-// res injection
-const resInject = function(pms){
-    let that = this || {}
-    let {parseData, exception} = that
+const Model = function(){
+    // pkey, url
+    this.pkey =  '_id'
+    this.url = '/'
+    // parse
 
-    const errFunc = (error) => {
-        if (typeof exception === 'function') {
-            throw exception.call(this, error)
-        }
-        throw error
-    }
+    const nested = function(){ return this.url.indexOf(':') !== -1}
 
-    if (typeof parseData === 'function') {
-        return pms.then(data => {
-            return parseData.call(this, data)
-        }).catch(errFunc)
-    }
-
-    return pms.catch(errFunc)
-}
-
-// nested url and params seperate
-const shuntNestedParams = function(obj){
-    if ([undefined, null].indexOf(obj) !== -1) {
-        throw('参数错误')
-    }
-
-    let s_url = Object.keys(obj).reduce((prev, name) => {
-        if (obj.hasOwnProperty(name)) {
-            let reg = new RegExp('/:' + name, 'gi')
-            if (prev.match(reg)) {
-                let val = obj[name]
-                delete obj[name]
-                return prev.replace(reg, '/' + val)
+    // serialize params object to ?a=1&b=2
+    const serialize = (params) => {
+        if (params && params.constructor === Object) {
+            if (Object.getOwnPropertyNames(params).length === 0) {
+                return ''
             }
+            return Object.keys(params).reduce((prev, current, index) => {
+                if ([undefined, null].indexOf(params[current]) !== -1) {
+                    return prev
+                }
+                if (prev.slice(-1) === '?') {
+                    return `${prev}${current}=${params[current]}`
+                }
+                return `${prev}&${current}=${params[current]}`
+            }, '?')
         }
-        return prev
-    }, this.url)
-
-    return {
-        s_url,
-        s_params: obj
-    }
-}
-
-const reqDispatch = function(method = 'OPTIONS', url = '', params = {}){
-    method = method.toUpperCase()
-    if (METHODS.indexOf(method) === -1) method = 'OPTIONS'
-    if (['HEAD', 'GET'].indexOf(method) !== -1) {
-        return resInject.call(this, fetchData(`${url}${serialize(params)}`))
-    }
-    if (method === 'DELETE') {
-        return resInject.call(this, fetchData(`${url}${serialize(params)}`, {method: 'DELETE'})) 
+        return ''
     }
 
-    params = Object.assign({method}, {body: serialize(params).slice(1)})
-    return resInject.call(this, fetchData(url, params))
-}
+    // res injection
+    const resInject = function(pms){
+        let that = this || Model
+        let {parseData, exception} = that
 
-// prototype
-em2.prototype = {
-    pkey: '_id',
-    nested(){
-        return this.url.indexOf(':') !== -1
-    },
-    trimParams(params) {
+        const errFunc = (error) => {
+            if (typeof exception === 'function') {
+                throw exception.call(this, error)
+            }
+            throw error
+        }
+
+        if (typeof parseData === 'function') {
+            return pms.then(data => {
+                console.log('this', this)
+                return parseData.call(this, data)
+            }).catch(errFunc)
+        }
+
+        return pms.catch(errFunc)
+    }
+
+    // nested url and params seperate
+    const shuntNestedParams = function(obj){
+        if ([undefined, null].indexOf(obj) !== -1) {
+            throw('参数错误')
+        }
+
+        let s_url = Object.keys(obj).reduce((prev, name) => {
+            if (obj.hasOwnProperty(name)) {
+                let reg = new RegExp('/:' + name, 'gi')
+                if (prev.match(reg)) {
+                    let val = obj[name]
+                    delete obj[name]
+                    return prev.replace(reg, '/' + val)
+                }
+            }
+            return prev
+        }, this.url)
+
+        return {
+            s_url,
+            s_params: obj
+        }
+    }
+    
+    // request dispatch
+    const reqDispatch = function(method = 'OPTIONS', url = '', params = {}){
+        method = method.toUpperCase()
+        if (METHODS.indexOf(method) === -1) method = 'OPTIONS'
+        if (['HEAD', 'GET'].indexOf(method) !== -1) {
+            return resInject.call(this, fetchData(`${url}${serialize.call(this, params)}`))
+        }
+        if (method === 'DELETE') {
+            return resInject.call(this, fetchData(`${url}${serialize.call(this, params)}`, {method: 'DELETE'})) 
+        }
+
+        params = Object.assign({method}, {body: serialize.call(this, params).slice(1)})
+        return resInject.call(this, fetchData(url, params))
+    }
+
+    this.trimParams = function(params){
         let {fields} = this;
         Object.keys(fields).forEach(name => {
             let format = fields[name]
@@ -244,10 +256,11 @@ em2.prototype = {
             }
         })
         return params
-    },
-    findOne(_id, params = {}) {
+    }
+
+    this.findOne = function(_id, params = {}) {
         // nested model
-        if (this.nested()) {
+        if (nested.call(this)) {
             if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
                 let {s_url} = shuntNestedParams.call(this, _id)
                 let pkey = _id[this.pkey]
@@ -267,9 +280,9 @@ em2.prototype = {
         return reqDispatch.call(this, 'GET', `${this.url}/${_id}`, params)
     },
 
-    find(params) {
+    this.find = function(params) {
         // nested
-        if (this.nested()) {
+        if (nested.call(this)) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             delete s_params[this.pkey]
             return reqDispatch.call(this, 'GET', s_url, s_params)
@@ -278,47 +291,49 @@ em2.prototype = {
         return reqDispatch.call(this, 'GET', this.url, params)
     },
 
-    update(params) {
+    this.update = function(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
 
-        if (this.nested()) {
+        if (nested.call(this)) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, this.trimParams.call(this, s_params))
         }
         return reqDispatch.call(this, 'PUT', `${this.url}/${_id}`, this.trimParams.call(this, params))
     },
     
-    create(params) {
+    this.create = function(params) {
         delete params[this.pkey]
-        if (this.nested()) {
+        if (nested.call(this)) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             return reqDispatch.call(this, 'POST', s_url, this.trimParams.call(this, s_params))
         }
         return reqDispatch.call(this, 'POST', this.url, this.trimParams.call(this, params))
-    },
+    }
 
-    save(params) {
+    this.save = function(params){
         return params && params[this.pkey] ? this.update(params) : this.create(params)
-    },
+    }
 
-    destroy(params) {
+    this.destroy = function(params) {
         let _id = params[this.pkey]
         delete params[this.pkey]
 
-        if (this.nested()) {
+        if (nested.call(this)) {
             let {s_url, s_params} = shuntNestedParams.call(this, params)
             return reqDispatch.call(this, 'DELETE', `${s_url}/${_id}`, s_params)
         }
         return reqDispatch.call(this, 'DELETE', `${this.url}/${_id}`, params)
-    },
-    request(method, url, params) {
+    }
+
+    this.request = function(method, url, params) {
         if (arguments.length < 2 || typeof method !== 'string' || typeof url !== 'string') {
             return console.error('params wrong, need three arguments: method, url, params(optional query and fetch setting)')
         }
 
         return reqDispatch.call(this, method, url, params)
     }
+
 }
 
 module.exports = em2
