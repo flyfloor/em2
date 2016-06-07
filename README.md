@@ -5,6 +5,8 @@ this is a front end easy model manager
 
 ### Usage
 
+#### create model
+
 ```
 import em2 from 'em2';
 
@@ -58,6 +60,8 @@ fields: ['name', 'age', ...]
 
 then use it:
 
+#### model methods
+
 ```
 //GET api?name=a&sex=b
 User.find({name: 'a', sex: 'b'}).then(data => {
@@ -92,7 +96,21 @@ User.save(params)
 User.destroy({_id, name: 'a',...})
 ```
 
-also has request
+#### nested model
+
+```
+const Comment = new em2({
+    url: '/post/:post_id/comment'
+})
+
+// GET /post/[post_id]/comment
+Comment.find({post_id, ...})
+
+// GET /post/[post_id]/comment/[_id]
+Comment.findOne({post_id, _id})
+```
+
+#### also has default request
 
 ```
 // request
