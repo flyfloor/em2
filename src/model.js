@@ -5,7 +5,7 @@ const METHODS = ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
 
 const trimFieldSlot = (item) => {
     let newItem = { type: item.type, default: item.default }
-    if (item.hasOwnProperty('type') &&  [undefined, null].indexOf(item.type) === -1) {
+    if (item.hasOwnProperty('type') && item.type) {
         if ([undefined, null].indexOf(item.default) !== -1 || item.default.constructor !== item.type) {
             newItem.default = item.type.call(null);
         }
@@ -52,7 +52,6 @@ const clearFields = (fields) => {
 // filter url 
 const filterUrl = (url) => {
     if (typeof url !== 'string') url = '';
-    
     // start with '/', but not http or https
     if (url.charAt(0) !== '/') {
         if (url.indexOf('http') !== 0 && url.indexOf('https') !== 0) {
@@ -61,8 +60,8 @@ const filterUrl = (url) => {
     }
     
     // if last is '/', remove it!
-    let l = url.length - 1;
-    if(l > 0 && url.charAt(l) === '/')  url = url.slice(0, l)
+    let _len = url.length - 1;
+    if(_len > 0 && url.charAt(_len) === '/')  url = url.slice(0, _len)
 
     return url
 }
@@ -121,13 +120,11 @@ const em2 = (initObj, config = {}) => {
 
 // reslove Data api
 const fetchData = function(url, params = {}){
-    params = params || {};
+    params = params || {}
     let headers = params.headers || {}
-
     if (!params.hasOwnProperty('method')) {
-        params.method = 'GET';
+        params.method = 'GET'
     }
-
     if (!headers['Content-Type']) {
         headers['Content-Type'] =  'application/x-www-form-urlencoded;charset=UTF-8'
     }
@@ -153,7 +150,6 @@ const Model = function(){
     // parse
 
     const nested = function(){ return this.url.indexOf(':') !== -1}
-
     // serialize params object to ?a=1&b=2
     const serialize = (params) => {
         if (params && params.constructor === Object) {
@@ -196,11 +192,10 @@ const Model = function(){
     }
 
     // nested url and params seperate
-    const shuntNestedParams = function(obj){
+    const filterNestedParams = function(obj){
         if ([undefined, null].indexOf(obj) !== -1) {
             throw('参数错误')
         }
-
         let s_url = Object.keys(obj).reduce((prev, name) => {
             if (obj.hasOwnProperty(name)) {
                 let reg = new RegExp('/:' + name, 'gi')
@@ -240,19 +235,22 @@ const Model = function(){
             let format = fields[name]
             if (params.hasOwnProperty(name)) {
                 let value = params[name]
-                let hasType = [undefined, null].indexOf(format.type) === -1
                 let hasVal = [undefined, null].indexOf(value) === -1
-                
                 // field has no type, and params's field has no value, remove key
-                if (!hasType && !hasVal) delete params[name]
-                
+                if (!format.type && !hasVal) delete params[name]
                 // field has type, and params's field has no value or value type wrong, filled with default
-                if (hasType && (!hasVal || value.constructor !== format.type)) {
-                    params[name] = [undefined, null].indexOf(value) === -1 ? format.default : format.type.call(null)
+                if (format.type && (!hasVal || value.constructor !== format.type)) {
+                    params[name] = hasVal ? format.default : format.type.call(null)
                 }
 
             } else {
-                if (format.type) params[name] = format.type.call(null)
+                if (format.type) {
+                    if ([undefined, null].indexOf(format.default) !== -1 || format.default.constructor !== format.type) {
+                        params[name] = format.type.call(null)
+                    } else {
+                        params[name] = format.default
+                    }
+                }
             }
         })
         return params
@@ -261,8 +259,8 @@ const Model = function(){
     this.findOne = function(_id, params = {}) {
         // nested model
         if (nested.call(this)) {
-            if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
-                let {s_url} = shuntNestedParams.call(this, _id)
+            if (_id && _id.constructor === Object) {
+                let {s_url} = filterNestedParams.call(this, _id)
                 let pkey = _id[this.pkey]
                 delete _id[this.pkey]
                 return reqDispatch.call(this, 'GET', `${s_url}/${pkey}`, params)
@@ -271,7 +269,7 @@ const Model = function(){
         }
 
         // basic
-        if ([undefined, null].indexOf(_id) === -1 && _id.constructor === Object) {
+        if (_id && _id.constructor === Object) {
             let pkey = _id[this.pkey]
             delete _id[this.pkey]
             return reqDispatch.call(this, 'GET', `${this.url}/${pkey}`, _id)
@@ -283,7 +281,7 @@ const Model = function(){
     this.find = function(params) {
         // nested
         if (nested.call(this)) {
-            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            let {s_url, s_params} = filterNestedParams.call(this, params)
             delete s_params[this.pkey]
             return reqDispatch.call(this, 'GET', s_url, s_params)
         }
@@ -296,7 +294,7 @@ const Model = function(){
         delete params[this.pkey]
 
         if (nested.call(this)) {
-            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            let {s_url, s_params} = filterNestedParams.call(this, params)
             return reqDispatch.call(this, 'PUT', `${s_url}/${_id}`, this.trimParams.call(this, s_params))
         }
         return reqDispatch.call(this, 'PUT', `${this.url}/${_id}`, this.trimParams.call(this, params))
@@ -305,7 +303,7 @@ const Model = function(){
     this.create = function(params) {
         delete params[this.pkey]
         if (nested.call(this)) {
-            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            let {s_url, s_params} = filterNestedParams.call(this, params)
             return reqDispatch.call(this, 'POST', s_url, this.trimParams.call(this, s_params))
         }
         return reqDispatch.call(this, 'POST', this.url, this.trimParams.call(this, params))
@@ -320,7 +318,7 @@ const Model = function(){
         delete params[this.pkey]
 
         if (nested.call(this)) {
-            let {s_url, s_params} = shuntNestedParams.call(this, params)
+            let {s_url, s_params} = filterNestedParams.call(this, params)
             return reqDispatch.call(this, 'DELETE', `${s_url}/${_id}`, s_params)
         }
         return reqDispatch.call(this, 'DELETE', `${this.url}/${_id}`, params)

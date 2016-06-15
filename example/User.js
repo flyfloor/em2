@@ -19,8 +19,9 @@ export default new em2({
         photos: {
             type: Array,
         },
-        social: {
-            type: Object,
+        anti_social: {
+            type: Boolean,
+            default: true,
         }
     },
 }, {

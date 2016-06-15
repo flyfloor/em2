@@ -1,4 +1,4 @@
-const parseData = (data) => {
+const parseData = function(data) {
     let {pkey} = this
     // if (pkey) {
     //     console.log(this.name, '==> pkey ==>', pkey)
