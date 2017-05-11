@@ -1,4 +1,5 @@
-require('whatwg-fetch')
+require('es6-promise').polyfill();
+require('isomorphic-fetch');
 const RSVP = require('rsvp');
 
 const METHODS = ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
