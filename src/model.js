@@ -150,7 +150,9 @@ const Model = function(){
     this.url = '/'
     // parse
 
-    const nested = function(){ return this.url.indexOf(':') !== -1}
+    const nested = function(){ 
+        return this.url.indexOf('/:') !== -1
+    }
     // serialize params object to ?a=1&b=2
     const serialize = (params) => {
         if (params && params.constructor === Object) {
